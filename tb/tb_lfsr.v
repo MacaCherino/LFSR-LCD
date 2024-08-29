@@ -1,4 +1,4 @@
-`timescale 100ns / 100ps //#1 es 1 ns
+`timescale 10ns / 100ps //#1 es 10 ns
 
 module tb_lfsr ();
 
@@ -18,8 +18,8 @@ module tb_lfsr ();
     reg                           i_corrupt                                     ;   //! Señal para corromper datos     
 
     // Registros Auxiliares
-    reg  [11 : 0]                 random_time_sync                              ;   //! Registro para almacenar el tiempo random del reset sincrono (entre 1 us y 250 us)
-    reg  [11 : 0]                 random_time_async                             ;   //! Registro para almacenar el tiempo random del reset asincrono (entre 1 us y 250 us)
+    reg  [14 : 0]                 random_time_sync                              ;   //! Registro para almacenar el tiempo random del reset sincrono (entre 1 us y 250 us)
+    reg  [14 : 0]                 random_time_async                             ;   //! Registro para almacenar el tiempo random del reset asincrono (entre 1 us y 250 us)
     reg  [16 : 0]                 period                                        ;   //! Registro para almacenar el periodo del generador
     reg  [15 : 0]                 current_seed                                  ;   //! Registro para almacenar la semilla actual
     reg  [2  : 0]                 count_valid                                   ;   //! Contador de datos validos consecutivos
@@ -30,13 +30,13 @@ module tb_lfsr ();
     reg                           random_reset_flag                             ;   //! Indicador de reset aleatorio
 
     // Definicion de macros
-    `define TEST1                                                                   //! Tipo de test
+    `define TEST4                                                                   //! Tipo de test
     // TEST1                      Trafico Valido
     // TEST2                      4 Datos validos, 1 invalido
     // TEST3                      Ya lockeado, 2 datos invalidos, 1 valido
     // TEST4                      5 datos validos, 3 invalidos 
 
-    `define RAND_RST                                                                //! Habilitar/Deshabilitar resets aleatorios
+    `define NO_RAND_RST                                                                //! Habilitar/Deshabilitar resets aleatorios
     // RAND_RST                   Habilita Resets en momentos aleatorios
     // NO_RAND_RST                Deshabilita resets en momentos aleatorios
 
@@ -52,8 +52,8 @@ module tb_lfsr ();
 
         // Inicializacion de registros
         period                         = 17'b0                                  ;
-        random_time_async              = 12'b0                                  ;
-        random_time_sync               = 12'b0                                  ;
+        random_time_async              = 15'b0                                  ;
+        random_time_sync               = 15'b0                                  ;
         current_seed                   = 16'b0                                  ;
         count_invalid                  =  2'b0                                  ;
         count_valid                    =  3'b0                                  ;
@@ -81,7 +81,7 @@ module tb_lfsr ();
     end
 
 
-    always #0.5 i_clk = ~i_clk                                                  ;   //! Periodo de clock 100 ns (10 MHz)
+    always #0.5 i_clk = ~i_clk                                                  ;   //! Periodo de clock 10 ns (100 MHz)
 
     always @(posedge i_clk) begin                                                   //! Determina un valor aleatorio para i_valid, indica si se debe realizar un reset en un momento aleatorio, cuenta la cantidad de datos validos e invalidos que se envian y determina si el siguiente dato se debe corromper, al cumplirse un periodo del generador lo imprime 
         
@@ -102,7 +102,7 @@ module tb_lfsr ();
             `ifdef RAND_RST
             begin
                 random_reset          <= $urandom_range(0,10000000)             ;
-                if (random_reset > 9999947) begin
+                if (random_reset > 9999950) begin
                     random_reset_flag <=  1'b1                                  ;
                 end else begin
                     random_reset_flag <=  1'b0                                  ;
@@ -174,7 +174,7 @@ module tb_lfsr ();
             begin
                 valid_limit            = VALID_TO_LOCK                          ;
                 invalid_limit          = 0                                      ;
-                #10000
+                #5000
                 valid_limit            = 1                                      ;
                 invalid_limit          = INVALID_TO_UNLOCK - 1                  ;
             end
@@ -196,7 +196,7 @@ module tb_lfsr ();
     // Task para generar un reset asincrono durante un tiempo random entre 1 us y 250 us
     task rst_async                                                              ;
         begin
-            random_time_async          = $urandom_range(10,2500)                ;
+            random_time_async          = $urandom_range(100,25000)              ;
             i_rst                      = 1'b1                                   ;
             #random_time_async                                                  ;
             i_rst                      = 1'b0                                   ;
@@ -206,7 +206,7 @@ module tb_lfsr ();
     // Task para generar un reset sincrono durante un tiempo random entre 1 us y 250 us
     task rst_sync                                                               ;
         begin
-            random_time_sync           = $urandom_range(10,2500)                ;
+            random_time_sync           = $urandom_range(100,25000)              ;
             @(posedge i_clk)                                                    ;
             i_soft_reset               = 1'b1                                   ;
             #random_time_sync                                                   ;
